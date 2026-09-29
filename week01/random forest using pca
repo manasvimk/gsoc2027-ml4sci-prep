@@ -1,1 +1,37 @@
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.datasets import fetch_openml
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+import seaborn as sns
 
+mnist = fetch_openml('mnist_784', version=1, parser='auto')
+X, y = mnist['data'], mnist['target']
+X = X.to_numpy()/255.0
+y = y.to_numpy()
+X_scaled = StandardScaler().fit_transform(X)
+pca = PCA(n_components=0.95)
+X_reduced = pca.fit_transform(X_scaled)
+X_train, X_test, y_train, y_test = train_test_split(X_reduced, y, test_size=0.2, random_state=42)
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Model Accuracy: {accuracy * 100:.2f}%")
+print("\nClassification Report:\n", classification_report(y_test, y_pred))
+
+#seeing the visualization for ourselves
+
+plt.figure(figsize=(10, 6))
+sns.lineplot(x=range(1, len(pca.explained_variance_ratio_) + 1), y=np.cumsum(pca.explained_variance_ratio_))
+plt.xlabel('Number of Components')
+plt.ylabel('Cumulative Explained Variance')
+plt.title('Cumulative Explained Variance by Principal Components')
+plt.grid(True)
+plt.axvline(x=pca.n_components_, color='r', linestyle='--', label=f'{pca.n_components_} Components (95% Variance)')
+plt.legend()
+plt.show()
